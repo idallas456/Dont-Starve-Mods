@@ -8,20 +8,21 @@ local UIAnim = require "widgets/uianim"
 local reignOfGiantsEnabled = false
 local isFocused = false
 
-local SeasonClock = Class(Widget, function(self)
+local SeasonClock = Class(Widget, function(self, autumn_color_option, winter_color_option, spring_color_option, summer_color_option, hover_text_option, hover_font_size, season_font_size)
 	Widget._ctor(self, "SeasonClock")
-
-	print ("SEASON CLOCK::CHECKING DLC")
 
 	reignOfGiantsEnabled = IsDLCEnabled(REIGN_OF_GIANTS)
 
 	-- Colors for the segments for the different seasons
-	self.SUMMER_COLOR = Vector3(255/255,215/255,86/255)
-	self.AUTUMN_COLOR = Vector3(255/255,99/255,71/255)
-	self.WINTER_COLOR = Vector3(152/255,245/255,255/255)
-	self.SPRING_COLOR = Vector3(50/255,198/255,166/255)
+	self.SUMMER_COLOR = self:GetColorForUserOption(summer_color_option)
+	self.AUTUMN_COLOR = self:GetColorForUserOption(autumn_color_option)
+	self.WINTER_COLOR = self:GetColorForUserOption(winter_color_option)
+	self.SPRING_COLOR = self:GetColorForUserOption(spring_color_option)
+	self.hoverTextOption = hover_text_option
+	print("HOVER TEXT OPTION: "..hover_text_option)
+	self.hoverFontSize = self:GetHoverFontSizeForUserOption(hover_font_size)
+	self.seasonFontSize = self:GetSeasonFontSizeForUserOption(season_font_size)
 	self.DARKEN_PERCENT = .90	
-
 
 	local totalDaysInYear, summerLength, autumnLength, winterLength, springLength = self:GetSeasonSegments()
 
@@ -38,13 +39,11 @@ local SeasonClock = Class(Widget, function(self)
     self.anim:GetAnimState():PlayAnimation("idle_day",true)
 
 
-    print ("SEASON CLOCK::CALCULATING SEGMENTS")
     -- Determine the sized circle segment we need (360 / number of days in a year). We use the circle generated circle segments and place them around the face of the clock in a circle.
     self.segs = {}
 	local segscale = .3
     local numsegs = totalDaysInYear
     local segmentDegree = math.floor(360/totalDaysInYear)
-    print ("SEGMENT DEGREE: "..tostring(segmentDegree))
     for i = 1, numsegs do
 		local seg = self:AddChild(Image("images/circlesegment_"..segmentDegree..".xml", "circlesegment_"..segmentDegree..".tex"))
         seg:SetScale(segscale,segscale,segscale)
@@ -54,29 +53,20 @@ local SeasonClock = Class(Widget, function(self)
         seg:SetClickable(false)
         table.insert(self.segs, seg)
     end
-
-    print ("SEASON CLOCK::DONE CALCULATING SEGMENTS")
-
-    print ("SEASON CLOCK::SETTING CLOCK HANDS etc")
     -- Clock rims, hands, and text
     self.rim = self:AddChild(Image("images/hud.xml", "clock_rim.tex"))
     self.hands = self:AddChild(Image("images/hud.xml", "clock_hand.tex"))
-    self.text = self:AddChild(Text(BODYTEXTFONT, 33/self.base_scale))
+    self.text = self:AddChild(Text(BODYTEXTFONT, self.seasonFontSize/self.base_scale))
     self.text:SetPosition(5, 0/self.base_scale, 0)
     self.rim:SetClickable(false)
     self.hands:SetClickable(false)
-
-    print ("SEASON CLOCK::DONE SETTING CLOCK HANDS")
 
     -- Listen for day complete to update the hand positiion
     self.inst:ListenForEvent( "daycomplete", function(inst, data) self:SetClockHand() end, GetWorld())
     self.inst:ListenForEvent( "daycomplete", function(inst, data) self:UpdateSeasonString() end, GetWorld())
 
-    print ("SEASON CLOCK::SETTING EVENT LISTENERS HANDS")
-
 	-- Register as a listener for the daycomplete event. Update season info string when this happens.
 	self.inst:ListenForEvent( "seasonChange", function() self:UpdateSeasonString() end, GetWorld())
-	print ("SEASON CLOCK::DONE SETTING EVENT LISTENERS HANDS")
 
 	self:CalcSegs()
 	self:UpdateSeasonString()
@@ -86,67 +76,52 @@ end)
 
 -- Sets the clock hand to the proper rotation based on the current day into the "year"
 function SeasonClock:SetClockHand()
-	print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS")
 	local seasonManager = GetSeasonManager()
 	local totalDaysInYear, summerLength, autumnLength, winterLength, springLength = self:GetSeasonSegments()
-	print("TotalDaysInYear: "..tostring(totalDaysInYear).."SummerLength: "..tostring(summerLength)..". AutumnLength: "..autumnLength..". WinterLength: "..winterLength..". SpringLength: "..springLength)
 	local daysIntoSeason = seasonManager:GetDaysIntoSeason()
 	daysIntoSeason = self:RoundNumber(daysIntoSeason)
 	local currentSeason = seasonManager:GetSeasonString()
 	local daysIntoYear = 0
 
-	print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 1")
-
 	if daysIntoSeason == 0 then
 		daysIntoSeason = daysIntoSeason
 	end
 
-	print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 2")
 	if currentSeason == "summer" then
 		daysIntoYear = daysIntoSeason  -- Since the clock starts at summer, probably a better more extensible way to do this later.
-		print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 3")
 	elseif currentSeason == "autumn" then
 		daysIntoYear = summerLength + daysIntoSeason
-		print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 4")
 	elseif currentSeason == "winter" then
 		daysIntoYear = summerLength + autumnLength + daysIntoSeason
-		print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 5")
 	elseif currentSeason == "spring" then
 		daysIntoYear = summerLength + autumnLength + winterLength + daysIntoSeason
-		print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 6")
 	end
 
-	print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 7")
 	local rotation = daysIntoYear * (360/totalDaysInYear)
-	print ("SEASON CLOCK::SETTOMG CLOCK HAND POSITIONS 8")
 
 	self.hands:SetRotation(rotation)
-
-	print ("SEASON CLOCK::DONE SETTOMG CLOCK HAND POSITIONS")
 end
 
 -- Determines what string to update depending on whether or not the user is currently focused (ie: in the case the user is hovering on the clock and the day complete event fires)
 function SeasonClock:UpdateSeasonString()
-	print ("SEASON CLOCK::UPDATING SEASON STRING")
 	if isFocused then
 		self:UpdateNextSeasonString()
 	else
 		self:UpdateSeasonNameString()
 	end
-	print ("SEASON CLOCK::DONE UPDATING SEASON STRING")
 end
 
 function SeasonClock:UpdateSeasonNameString()
 	local currentSeason = self:GetPrettySeasonName()
 	self.text:SetString(currentSeason)
-	self.text:SetSize(33/self.base_scale)
+	self.text:SetSize(self.seasonFontSize/self.base_scale)
 end
 
 function SeasonClock:UpdateNextSeasonString()
 	SeasonClock._base.OnGainFocus(self)
 	local clock_str = self:GenerateCurrentSeasonClockString()
 	self.text:SetString(clock_str)
-	self.text:SetSize(21/self.base_scale)
+	self.text:SetSize(self.hoverFontSize/self.base_scale)
 end
 
 -- Get the total number of segments...multireturn:
@@ -183,7 +158,6 @@ local firstSummer, firstAutumn, firstWinter, firstSpring = true, true, true, tru
 
 -- Sets the colors of all segments in the clock.
 function SeasonClock:CalcSegs()
-	print ("SEASON CLOCK::CALCULATING SEGMENTS")
     local dark = false
 
     local totalDaysInYear, summerLength, autumnLength, winterLength, springLength = self:GetSeasonSegments()
@@ -209,7 +183,6 @@ function SeasonClock:CalcSegs()
 		seg:SetTint(color.x, color.y, color.z, 1)
 		dark = not dark
     end
-    print ("SEASON CLOCK::DONE CALCULATING SEGMENTS")
 end
 
 -- Gets the properly cased string representation of the current season.
@@ -240,17 +213,24 @@ end
 
 -- Retrieves the season string we display on hover
 function SeasonClock:GenerateCurrentSeasonClockString()
-		local seasonManager = GetSeasonManager()
-		local daysIn = seasonManager:GetDaysIntoSeason()
-		local currentSeason = self:GetPrettySeasonName()
-		local nextSeason = self:GetNextSeason()
+	local seasonManager = GetSeasonManager()
+	local daysIn = seasonManager:GetDaysIntoSeason()
+	local currentSeason = self:GetPrettySeasonName()
+	local nextSeason = self:GetNextSeason()
 
-		-- We have to potentially round the days remaining and days in. Otherwise we sometimes get values like 0.99999 or 1.88888787e-15
-		local daysLeft = seasonManager:GetDaysLeftInSeason()
-		daysLeft = self:RoundNumber(daysLeft)
-		daysIn = self:RoundNumber(daysIn)
+	-- We have to potentially round the days remaining and days in. Otherwise we sometimes get values like 0.99999 or 1.88888787e-15
+	local daysLeft = seasonManager:GetDaysLeftInSeason()
+	daysLeft = self:RoundNumber(daysLeft)
+	daysIn = self:RoundNumber(daysIn)
 
-	return string.format("%s days into %s.\r%s days left until %s.", daysIn, currentSeason, daysLeft, self:GetNextSeason())
+	local seasonString = ""
+	if (self.hoverTextOption == "detailed") then 
+		seasonString = string.format("%s days into %s.\r%s days until %s.", daysIn+1, currentSeason, daysLeft, self:GetNextSeason())
+	else
+		seasonString = string.format("%s/%s\r%s", daysIn+1, seasonManager:GetSeasonLength(), self:GetNextSeason())
+	end
+
+	return seasonString
 end
 
 -- If the fractional part of the value is less than 0.5 we return the floor of the value, otherwise we return the ceiling of the value.
@@ -264,6 +244,29 @@ function SeasonClock:RoundNumber(value)
 	end
 	
 	return value
+end
+
+function SeasonClock:GetColorForUserOption(useroption)
+	local colors = { ["lightred"] = Vector3(255/255,99/255,71/255), ["red"] = Vector3(220/255,20/255,60/255), ["yellow"] = Vector3(238/255,238/255,0/255), ["lightyellow"] = Vector3(255/255,255/255,0/255), ["lightblue"] = Vector3(152/255,245/255,255/255), ["blue"] = Vector3(98/255,184/255,255/255), ["lightgreen"] = Vector3(180/255,238/255,180/255), ["green"] = Vector3(50/255,198/255,166/255) }
+
+	return colors[useroption]
+end
+
+function SeasonClock:GetSeasonFontSizeForUserOption(useroption)
+	local fontsizes = { ["verysmall"] = 20, ["small"] = 25, ["default"] = 33, ["large"] = 38, ["verylarge"] = 43}
+
+	return fontsizes[useroption]
+end
+
+function SeasonClock:GetHoverFontSizeForUserOption(useroption)
+	local detailedFontsizes = { ["verysmall"] = 11, ["small"] = 16, ["default"] = 25, ["large"] = 30, ["verylarge"] = 35}
+	local briefFontsizes = { ["verysmall"] = 20, ["small"] = 24, ["default"] = 33, ["large"] = 40, ["verylarge"] = 47}
+
+	if(self.hoverTextOption == "detailed") then
+		return detailedFontsizes[useroption]
+	else
+		return briefFontsizes[useroption]
+	end
 end
 
 function SeasonClock:OnGainFocus()
