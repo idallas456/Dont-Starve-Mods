@@ -30,7 +30,7 @@ local SeasonClock = GLOBAL.require("widgets/seasonclock")
 
 function AddSeasonClock( inst )
 	local controls = inst.HUD.controls
-	local seasonClock = SeasonClock(GetModConfigData("autumn_color"), GetModConfigData("winter_color"), GetModConfigData("spring_color"), GetModConfigData("summer_color"), GetModConfigData("hovertextoption"), GetModConfigData("hoverfontsize"), GetModConfigData("seasonfontsize"))
+	local seasonClock = SeasonClock(GetModConfigData("autumn_color"), GetModConfigData("winter_color"), GetModConfigData("spring_color"), GetModConfigData("summer_color"), GetModConfigData("hovertextoption"), GetModConfigData("hoverfontsize"), GetModConfigData("seasonfontsize"), GetModConfigData("texttodisplay"))
 
 	controls.status:AddChild(seasonClock)
 	seasonClock:SetPosition(0, -20, 0)

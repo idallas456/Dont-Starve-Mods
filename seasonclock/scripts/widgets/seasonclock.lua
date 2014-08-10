@@ -8,7 +8,7 @@ local UIAnim = require "widgets/uianim"
 local reignOfGiantsEnabled = false
 local isFocused = false
 
-local SeasonClock = Class(Widget, function(self, autumn_color_option, winter_color_option, spring_color_option, summer_color_option, hover_text_option, hover_font_size, season_font_size)
+local SeasonClock = Class(Widget, function(self, autumn_color_option, winter_color_option, spring_color_option, summer_color_option, hover_text_option, hover_font_size, season_font_size, text_to_display)
 	Widget._ctor(self, "SeasonClock")
 
 	reignOfGiantsEnabled = IsDLCEnabled(REIGN_OF_GIANTS)
@@ -22,6 +22,7 @@ local SeasonClock = Class(Widget, function(self, autumn_color_option, winter_col
 	print("HOVER TEXT OPTION: "..hover_text_option)
 	self.hoverFontSize = self:GetHoverFontSizeForUserOption(hover_font_size)
 	self.seasonFontSize = self:GetSeasonFontSizeForUserOption(season_font_size)
+	self.defaultTextToDisplay = text_to_display
 	self.DARKEN_PERCENT = .90	
 
 	local totalDaysInYear, summerLength, autumnLength, winterLength, springLength = self:GetSeasonSegments()
@@ -104,10 +105,22 @@ end
 
 -- Determines what string to update depending on whether or not the user is currently focused (ie: in the case the user is hovering on the clock and the day complete event fires)
 function SeasonClock:UpdateSeasonString()
-	if isFocused then
-		self:UpdateNextSeasonString()
+	local hoverMethod, defaultMethod
+
+	if (self.defaultTextToDisplay == "currentseason") then
+		hoverMethod = self.UpdateNextSeasonString;
+		defaultMethod = self.UpdateSeasonNameString;
+	elseif (self.defaultTextToDisplay == "seasonprogress") then
+		hoverMethod = self.UpdateSeasonNameString;
+		defaultMethod = self.UpdateNextSeasonString
 	else
-		self:UpdateSeasonNameString()
+		return -- Don't display anything.
+	end
+
+	if isFocused then
+		hoverMethod(self)
+	else
+		defaultMethod(self)
 	end
 end
 

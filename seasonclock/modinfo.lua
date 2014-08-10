@@ -136,6 +136,17 @@ configuration_options =
 						{description = "True", data = true},
 						{description = "False", data = false},
 					},
-		default = "default",
+		default = true,
+	},
+
+	{
+		name = "texttodisplay",
+		label = "Default Text to Display",
+		options = {
+						{description = "Current Season", data = "currentseason"},
+						{description = "Season Progress", data = "seasonprogress"},
+						{description = "Off", data = "off"},
+					},
+		default = "currentseason",
 	},
 }
