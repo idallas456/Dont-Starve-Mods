@@ -23,6 +23,7 @@ Assets = {
 	Asset("ATLAS", "images/circlesegment_24.xml"),
 	Asset("ATLAS", "images/circlesegment_30.xml"),
 	Asset("ATLAS", "images/circlesegment_36.xml"),
+	Asset("ATLAS", "images/circlesegment_45.xml"),
 	Asset("ATLAS", "images/circlesegment_72.xml"),
 }
 

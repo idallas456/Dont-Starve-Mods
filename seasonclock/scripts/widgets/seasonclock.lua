@@ -19,13 +19,15 @@ local SeasonClock = Class(Widget, function(self, autumn_color_option, winter_col
 	self.WINTER_COLOR = self:GetColorForUserOption(winter_color_option)
 	self.SPRING_COLOR = self:GetColorForUserOption(spring_color_option)
 	self.hoverTextOption = hover_text_option
-	print("HOVER TEXT OPTION: "..hover_text_option)
 	self.hoverFontSize = self:GetHoverFontSizeForUserOption(hover_font_size)
 	self.seasonFontSize = self:GetSeasonFontSizeForUserOption(season_font_size)
 	self.defaultTextToDisplay = text_to_display
 	self.DARKEN_PERCENT = .90	
 
 	local totalDaysInYear, summerLength, autumnLength, winterLength, springLength = self:GetSeasonSegments()
+
+	-- DEBUG
+	print(string.format("Total Days in Year: [%s]. Summer Length: [%s]. Autumn Length: [%s]. Winter Length [%s]. Spring Length: [%s].", tostring(totalDaysInYear), tostring(summerLength), tostring(autumnLength), tostring(winterLength), tostring(springLength)))
 
 	-- Setup Scaling
     self.base_scale = 1
